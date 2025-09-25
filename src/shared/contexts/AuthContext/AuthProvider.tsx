@@ -24,10 +24,21 @@ export const AuthProvider: React.FC<IAuthProviderProps> = ({ children }) => {
     setIsLoading(false);
   }, []);
 
-  const login = useCallback((authData: IAuth, userData?: UserProfile) => {
+  const login = useCallback(async (authData: IAuth, userData?: UserProfile) => {
     localStorage.setItem(LOCAL_STORAGE_KEY__ACCESS_TOKEN, authData.accessToken);
     setAuth(authData);
-    if (userData) setUser(userData);
+
+    if (userData) {
+      setUser(userData);
+    } else {
+      try {
+        const profile = await authService.getProfile();
+        setUser(profile);
+      } catch (err) {
+        console.error("Erro ao buscar perfil no login:", err);
+        setUser(null);
+      }
+    }
   }, []);
 
   const logout = useCallback(() => {
