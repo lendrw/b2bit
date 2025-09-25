@@ -2,61 +2,69 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { authService } from "../../shared/services";
 import { useAuthContext } from "../../shared/contexts";
+import { AxiosError } from "axios";
+import { ErrorMessage, Field, Form, Formik } from "formik";
 
 export const Login: React.FC = () => {
   const { login } = useAuthContext();
   const navigate = useNavigate();
-
-  const [formData, setFormData] = useState({ email: "", password: "" });
   const [error, setError] = useState<string | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsSubmitting(true);
-    setError(null);
-
-    try {
-      const response = await authService.login(formData);
-
-      login({ accessToken: response.tokens.access });
-
-      navigate("/profile");
-    } catch (err: any) {
-      setError(err.message || "Login failed");
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
 
   return (
     <div>
-      <form onSubmit={handleSubmit}>
-        <input
-          type="email"
-          name="email"
-          placeholder="Email"
-          required
-          value={formData.email}
-          onChange={handleChange}
-        />
-        <input
-          type="password"
-          name="password"
-          placeholder="Password"
-          required
-          value={formData.password}
-          onChange={handleChange}
-        />
-        <button type="submit" disabled={isSubmitting}>
-          {isSubmitting ? "Signing In..." : "Sign In"}
-        </button>
-      </form>
+      <Formik
+        initialValues={{ email: "", password: "" }}
+        validate={(values) => {
+          const errors: Partial<typeof values> = {};
+          if (!values.email) {
+            errors.email = "Required";
+          } else if (
+            !/^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i.test(values.email)
+          ) {
+            errors.email = "Invalid email address";
+          }
+          if (!values.password) {
+            errors.password = "Required";
+          }
+          return errors;
+        }}
+        onSubmit={async (values, { setSubmitting, setErrors }) => {
+          try {
+            const response = await authService.login(values);
+            login({ accessToken: response.tokens.access });
+            navigate("/profile");
+          } catch (err: unknown) {
+            if (err instanceof AxiosError && err.response?.status === 400) {
+              const data = err.response.data as Record<string, string[]>;
+              const formErrors: Record<string, string> = {};
+              Object.keys(data).forEach((field) => {
+                formErrors[field] = data[field][0];
+              });
+              setErrors(formErrors);
+            } else {
+              setError("Wrong e-mail or password, please try again.");
+            }
+          } finally {
+            setSubmitting(false);
+          }
+        }}
+      >
+        {({ isSubmitting }) => (
+          <Form>
+            <div>
+              <Field type="email" name="email" placeholder="Email" />
+              <ErrorMessage name="email" component="div" />
+            </div>
+            <div>
+              <Field type="password" name="password" placeholder="Password" />
+              <ErrorMessage name="password" component="div" />
+            </div>
+            <button type="submit" disabled={isSubmitting}>
+              {isSubmitting ? "Loading..." : "Login"}
+            </button>
+          </Form>
+        )}
+      </Formik>
       {error && <p style={{ color: "red" }}>{error}</p>}
     </div>
   );

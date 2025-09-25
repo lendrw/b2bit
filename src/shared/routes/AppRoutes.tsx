@@ -1,4 +1,3 @@
-// src/routes/AppRoutes.tsx
 import { Routes, Route, Navigate } from "react-router-dom";
 import { Login, UserProfile } from "../../pages";
 import { type JSX } from "react";
