@@ -23,13 +23,31 @@ export interface LoginResponse {
 
 export interface UserProfile {
   id: string;
+  avatar: {
+    id: number;
+    high: string;
+    medium: string;
+    low: string;
+  };
   name: string;
+  last_name: string;
   email: string;
+  role: {
+    value: number;
+    label: string;
+  };
+  last_login: string;
+  staff_role: {
+    value: number;
+    label: string;
+  };
 }
 
 export interface IAuthContextData {
   isAuthenticated: boolean;
   isLoading: boolean;
   login: (authData: IAuth) => void;
+  user: UserProfile | null;
+  setUser: (user: UserProfile) => void;
   logout: () => void;
 }
