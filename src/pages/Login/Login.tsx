@@ -20,11 +20,11 @@ export const Login: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
 
   return (
-    <PageLayout className="bg-[#FAFAFA] ">
+    <PageLayout className="bg-[#FAFAFA]">
       {isLoading ? (
         <Spinner />
       ) : (
-        <Card className="bg-[#FFFFFF] w-screen sm:w-[11cm]  h-[14cm] flex items-center justify-center p-6 rounded-3xl shadow-[0_0_60px_0_rgba(200,200,200,1)] border-0">
+        <Card className="bg-[#FFFFFF] w-screen sm:w-[11cm] h-[14cm] flex items-center justify-center p-6 rounded-3xl shadow-[0_0_60px_0_rgba(200,200,200,1)] border-0">
           <img src={b2bitLogo} alt="B2Bit Logo" className="w-75" />
           <Formik
             initialValues={{ email: "", password: "" }}
@@ -63,8 +63,8 @@ export const Login: React.FC = () => {
               }
             }}
           >
-            {({ isSubmitting }) => (
-              <Form className="w-full h-74 flex flex-col justify-between ">
+            {({ isSubmitting, handleChange }) => (
+              <Form className="w-full h-74 flex flex-col justify-between">
                 <div className="flex flex-col gap-2">
                   <Label htmlFor="email" className="text-base text-[#262626]">
                     E-mail
@@ -76,6 +76,10 @@ export const Login: React.FC = () => {
                     placeholder="Email"
                     autoComplete="email"
                     className="bg-[#F1F1F1] text-[#B4B4B4] border-0 h-[1.4cm] rounded-lg"
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                      setError(null);
+                      handleChange(e);
+                    }}
                   />
                   <ErrorMessage
                     name="email"
@@ -84,7 +88,7 @@ export const Login: React.FC = () => {
                     }: {
                       children?: React.ReactNode;
                     }) => (
-                      <Alert variant="destructive" className="p-0 border-0 ">
+                      <Alert variant="destructive" className="p-0 border-0">
                         <AlertCircleIcon className="h-4 w-4" />
                         <AlertDescription>{children}</AlertDescription>
                       </Alert>
@@ -105,6 +109,10 @@ export const Login: React.FC = () => {
                     placeholder="Password"
                     autoComplete="current-password"
                     className="bg-[#F1F1F1] text-[#B4B4B4] border-0 h-[1.4cm] rounded-lg"
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                      setError(null);
+                      handleChange(e);
+                    }}
                   />
                   <ErrorMessage
                     name="password"
@@ -113,7 +121,7 @@ export const Login: React.FC = () => {
                     }: {
                       children?: React.ReactNode;
                     }) => (
-                      <Alert variant="destructive" className="p-0 border-0 ">
+                      <Alert variant="destructive" className="p-0 border-0">
                         <AlertCircleIcon className="h-4 w-4" />
                         <AlertDescription>{children}</AlertDescription>
                       </Alert>
@@ -131,7 +139,7 @@ export const Login: React.FC = () => {
             )}
           </Formik>
           {error && (
-            <Alert variant="destructive" className="p-2">
+            <Alert variant="destructive" className="p-2 mt-2">
               <AlertCircleIcon className="h-4 w-4" />
               <AlertTitle>Login failed.</AlertTitle>
               <AlertDescription>{error}</AlertDescription>
