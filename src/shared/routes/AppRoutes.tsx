@@ -28,10 +28,34 @@ export const PrivateRoute: React.FC<PrivateRouteProps> = ({ children }) => {
 };
 
 export const AppRoutes = () => {
+  const { isAuthenticated, isLoading } = useAuthContext();
+
+  if (isLoading) {
+    return (
+      <PageLayout>
+        <Spinner />
+      </PageLayout>
+    );
+  }
+
   return (
     <Routes>
-      <Route path="/" element={<Login />} />
-
+      <Route
+        path="/"
+        element={
+          isAuthenticated ? (
+            <Navigate to="/profile" replace />
+          ) : (
+            <Navigate to="/login" replace />
+          )
+        }
+      />
+      <Route
+        path="/login"
+        element={
+          isAuthenticated ? <Navigate to="/profile" replace /> : <Login />
+        }
+      />
       <Route
         path="/profile"
         element={
@@ -40,8 +64,7 @@ export const AppRoutes = () => {
           </PrivateRoute>
         }
       />
-
-      <Route path="*" element={<Navigate to="/" />} />
+      <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
 };
