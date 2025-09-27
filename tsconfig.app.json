@@ -11,6 +11,7 @@
     "paths": {
       "@/*": ["./src/*"]
     },
+    "composite": true,
 
     /* Bundler mode */
     "moduleResolution": "bundler",
@@ -28,5 +29,5 @@
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true
   },
-  "include": ["src"]
+  "include": ["src", "src/shared/types"]
 }

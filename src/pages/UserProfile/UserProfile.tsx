@@ -30,7 +30,7 @@ export const UserProfile: React.FC = () => {
             <div className="flex flex-col items-center gap-1">
               <h3 className="text-xs">Profile picture</h3>
               <img
-                src={user.avatar.high}
+                src={user.avatar.low}
                 alt="Profile"
                 className="w-[1.4cm] h-[1.4cm] rounded-md object-cover object-center"
               />
