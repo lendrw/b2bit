@@ -1,6 +1,6 @@
+import React, { JSX } from "react";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { Login } from "./Login";
 import {
   BrowserRouter,
   MemoryRouter,
@@ -9,24 +9,19 @@ import {
   Routes,
 } from "react-router-dom";
 import { AuthContext } from "@/shared/contexts/AuthContext/AuthContext";
-import { authService } from "../../shared/services";
-import React, { JSX } from "react";
+import { authService } from "@/shared/services";
+import { Login } from "./Login";
 import { UserProfile } from "../UserProfile/UserProfile";
 
 const mockNavigate = jest.fn();
 
 jest.mock("react-router-dom", () => {
   const original = jest.requireActual("react-router-dom");
-  return {
-    ...original,
-    useNavigate: () => mockNavigate,
-  };
+  return { ...original, useNavigate: () => mockNavigate };
 });
 
 jest.mock("../../shared/services", () => ({
-  authService: {
-    login: jest.fn(),
-  },
+  authService: { login: jest.fn() },
 }));
 
 const PrivateRoute = ({ children }: { children: JSX.Element }) => {
@@ -34,159 +29,142 @@ const PrivateRoute = ({ children }: { children: JSX.Element }) => {
   return isAuthenticated ? children : <Navigate to="/login" replace />;
 };
 
-const renderWithContext = (isLoading = false, login = jest.fn()) => {
-  render(
+const renderWithAuthContext = (
+  overrides: Partial<React.ContextType<typeof AuthContext>> = {}
+) => {
+  const defaultValue = {
+    login: jest.fn(),
+    logout: jest.fn(),
+    user: null,
+    isAuthenticated: false,
+    isLoading: false,
+    setUser: jest.fn(),
+  };
+
+  return render(
     <BrowserRouter>
-      <AuthContext.Provider
-        value={{
-          login,
-          logout: jest.fn(),
-          user: null,
-          isAuthenticated: false,
-          isLoading,
-          setUser: jest.fn(),
-        }}
-      >
+      <AuthContext.Provider value={{ ...defaultValue, ...overrides }}>
         <Login />
       </AuthContext.Provider>
     </BrowserRouter>
   );
 };
 
-describe("Login component - unit", () => {
-  test("shows required errors when submitting empty form", async () => {
-    renderWithContext();
-    const button = screen.getByRole("button", { name: /sign in/i });
-    await userEvent.click(button);
+const fillLoginForm = async (email: string, password: string) => {
+  await userEvent.type(screen.getByPlaceholderText("Email"), email);
+  await userEvent.type(screen.getByPlaceholderText("Password"), password);
+  await userEvent.click(screen.getByRole("button", { name: /sign in/i }));
+};
 
-    await waitFor(() => {
-      const errors = screen.getAllByText("Required");
-      errors.forEach((error) => {
-        expect(error).toBeInTheDocument();
+describe("Login component", () => {
+  describe("unit tests", () => {
+    it("shows required errors when submitting empty form", async () => {
+      renderWithAuthContext();
+      await userEvent.click(screen.getByRole("button", { name: /sign in/i }));
+
+      await waitFor(() => {
+        expect(screen.getAllByText("Required").length).toBeGreaterThan(0);
+      });
+    });
+
+    it("calls login on valid submission", async () => {
+      const mockLogin = jest.fn();
+      (authService.login as jest.Mock).mockResolvedValue({
+        tokens: { access: "abc" },
+      });
+
+      renderWithAuthContext({ login: mockLogin });
+      await fillLoginForm("test@test.com", "123456");
+
+      await waitFor(() => {
+        expect(mockLogin).toHaveBeenCalledWith({ accessToken: "abc" });
+      });
+    });
+
+    it("shows error when email format is invalid", async () => {
+      renderWithAuthContext();
+      await fillLoginForm("abc", "123456");
+
+      await waitFor(() => {
+        expect(screen.getByText(/Invalid email address/i)).toBeInTheDocument();
       });
     });
   });
 
-  test("calls login on valid submission", async () => {
-    const mockLogin = jest.fn();
-    (authService.login as jest.Mock).mockResolvedValue({
-      tokens: { access: "abc" },
-    });
-    renderWithContext(false, mockLogin);
-
-    await userEvent.type(screen.getByPlaceholderText("Email"), "test@test.com");
-    await userEvent.type(screen.getByPlaceholderText("Password"), "123456");
-    await userEvent.click(screen.getByRole("button", { name: /sign in/i }));
-
-    await waitFor(() => {
-      expect(mockLogin).toHaveBeenCalledWith({ accessToken: "abc" });
-    });
-  });
-
-  test("shows error when email format is invalid", async () => {
-    renderWithContext();
-
-    await userEvent.type(screen.getByPlaceholderText("Email"), "abc");
-    await userEvent.type(screen.getByPlaceholderText("Password"), "123456");
-    await userEvent.click(screen.getByRole("button", { name: /sign in/i }));
-
-    await waitFor(() => {
-      expect(screen.getByText(/Invalid email address/i)).toBeInTheDocument();
-    });
-  });
-});
-
-describe("Login component - component", () => {
-  test("renders email, password fields and button", () => {
-    renderWithContext();
-    expect(screen.getByPlaceholderText("Email")).toBeInTheDocument();
-    expect(screen.getByPlaceholderText("Password")).toBeInTheDocument();
-    expect(
-      screen.getByRole("button", { name: /sign in/i })
-    ).toBeInTheDocument();
-  });
-
-  test("displays error alert on failed login and clears on input change", async () => {
-    (authService.login as jest.Mock).mockRejectedValue(new Error("Invalid"));
-    renderWithContext();
-
-    await userEvent.type(screen.getByPlaceholderText("Email"), "fail@test.com");
-    await userEvent.type(screen.getByPlaceholderText("Password"), "wrong");
-    await userEvent.click(screen.getByRole("button", { name: /sign in/i }));
-
-    await waitFor(() => {
-      expect(screen.getByText(/login failed/i)).toBeInTheDocument();
+  describe("integration tests", () => {
+    it("renders email, password fields and button", () => {
+      renderWithAuthContext();
+      expect(screen.getByPlaceholderText("Email")).toBeInTheDocument();
+      expect(screen.getByPlaceholderText("Password")).toBeInTheDocument();
+      expect(
+        screen.getByRole("button", { name: /sign in/i })
+      ).toBeInTheDocument();
     });
 
-    await userEvent.clear(screen.getByPlaceholderText("Email"));
-    await userEvent.type(
-      screen.getByPlaceholderText("Email"),
-      "fail2@test.com"
-    );
+    it("displays error alert on failed login and clears on input change", async () => {
+      (authService.login as jest.Mock).mockRejectedValue(new Error("Invalid"));
+      renderWithAuthContext();
 
-    expect(screen.queryByText(/login failed/i)).not.toBeInTheDocument();
-  });
+      await fillLoginForm("fail@test.com", "wrong");
 
-  test("redirects to /profile on successful login", async () => {
-    const mockLogin = jest.fn();
-    (authService.login as jest.Mock).mockResolvedValue({
-      tokens: { access: "abc" },
+      await waitFor(() => {
+        expect(screen.getByText(/login failed/i)).toBeInTheDocument();
+      });
+
+      await userEvent.clear(screen.getByPlaceholderText("Email"));
+      await userEvent.type(
+        screen.getByPlaceholderText("Email"),
+        "fixed@test.com"
+      );
+
+      expect(screen.queryByText(/login failed/i)).not.toBeInTheDocument();
     });
 
-    render(
-      <BrowserRouter>
-        <AuthContext.Provider
-          value={{
-            login: mockLogin,
-            logout: jest.fn(),
-            user: null,
-            isAuthenticated: false,
-            isLoading: false,
-            setUser: jest.fn(),
-          }}
-        >
-          <Login />
-        </AuthContext.Provider>
-      </BrowserRouter>
-    );
+    it("redirects to /profile on successful login", async () => {
+      const mockLogin = jest.fn();
+      (authService.login as jest.Mock).mockResolvedValue({
+        tokens: { access: "abc" },
+      });
 
-    await userEvent.type(screen.getByPlaceholderText("Email"), "test@test.com");
-    await userEvent.type(screen.getByPlaceholderText("Password"), "123456");
-    await userEvent.click(screen.getByRole("button", { name: /sign in/i }));
+      renderWithAuthContext({ login: mockLogin });
+      await fillLoginForm("test@test.com", "123456");
 
-    await waitFor(() => {
-      expect(mockNavigate).toHaveBeenCalledWith("/profile");
+      await waitFor(() => {
+        expect(mockNavigate).toHaveBeenCalledWith("/profile");
+      });
     });
   });
 
-  test("If the user tries to manually access /profile, they are redirected to /login if not authenticated.", () => {
-    render(
-      <MemoryRouter initialEntries={["/profile"]}>
-        <AuthContext.Provider
-          value={{
-            login: jest.fn(),
-            logout: jest.fn(),
-            user: null,
-            isAuthenticated: false,
-            isLoading: false,
-            setUser: jest.fn(),
-          }}
-        >
-          <Routes>
-            <Route
-              path="/profile"
-              element={
-                <PrivateRoute>
-                  <UserProfile />
-                </PrivateRoute>
-              }
-            />
-            <Route path="/login" element={<div>Login Page</div>} />
-          </Routes>
-        </AuthContext.Provider>
-      </MemoryRouter>
-    );
+  describe("routing behavior", () => {
+    it("redirects unauthenticated user from /profile to /login", () => {
+      render(
+        <MemoryRouter initialEntries={["/profile"]}>
+          <AuthContext.Provider
+            value={{
+              login: jest.fn(),
+              logout: jest.fn(),
+              user: null,
+              isAuthenticated: false,
+              isLoading: false,
+              setUser: jest.fn(),
+            }}
+          >
+            <Routes>
+              <Route
+                path="/profile"
+                element={
+                  <PrivateRoute>
+                    <UserProfile />
+                  </PrivateRoute>
+                }
+              />
+              <Route path="/login" element={<div>Login Page</div>} />
+            </Routes>
+          </AuthContext.Provider>
+        </MemoryRouter>
+      );
 
-    expect(screen.getByText("Login Page")).toBeInTheDocument();
+      expect(screen.getByText("Login Page")).toBeInTheDocument();
+    });
   });
 });
