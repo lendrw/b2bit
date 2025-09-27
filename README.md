@@ -1,6 +1,6 @@
 # 🚀 Frontend Project – Selection Process
 
-This project was built with **React + Vite** as part of the selection process.
+This project was built with **React + Vite** as part of the selection process.  
 It includes:
 
 - ⚛️ **React + Vite** for building the application
@@ -34,6 +34,8 @@ npm run dev
 
 The app will be available at:
 👉 [http://localhost:5173](http://localhost:5173)
+And you can also access the deployed version at:
+👉 [https://b2bit-pi.vercel.app](https://b2bit-pi.vercel.app)
 
 ---
 
