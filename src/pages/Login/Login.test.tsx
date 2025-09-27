@@ -82,6 +82,18 @@ describe("Login component - unit", () => {
       expect(mockLogin).toHaveBeenCalledWith({ accessToken: "abc" });
     });
   });
+
+  test("shows error when email format is invalid", async () => {
+    renderWithContext();
+
+    await userEvent.type(screen.getByPlaceholderText("Email"), "abc");
+    await userEvent.type(screen.getByPlaceholderText("Password"), "123456");
+    await userEvent.click(screen.getByRole("button", { name: /sign in/i }));
+
+    await waitFor(() => {
+      expect(screen.getByText(/Invalid email address/i)).toBeInTheDocument();
+    });
+  });
 });
 
 describe("Login component - component", () => {
