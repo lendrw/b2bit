@@ -86,7 +86,7 @@ describe("Login component", () => {
       await fillLoginForm("abc", "123456");
 
       await waitFor(() => {
-        expect(screen.getByText(/Invalid email address/i)).toBeInTheDocument();
+        expect(screen.getByText(/Invalid e-mail address/i)).toBeInTheDocument();
       });
     });
   });
